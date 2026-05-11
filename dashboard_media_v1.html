@@ -1,0 +1,1003 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Académico — Educación Media</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+:root{--bg:#f5f4f0;--sur:#fff;--sur2:#f0efe9;--bd:rgba(0,0,0,0.09);--tx:#1a1a18;--tx2:#5f5e5a;--tx3:#888780;--ac:#185FA5;--dng:#A32D2D;--wrn:#854F0B;--ok:#3B6D11;--r:10px;--rl:14px}
+@media(prefers-color-scheme:dark){:root{--bg:#1e1e1c;--sur:#2a2a28;--sur2:#232321;--bd:rgba(255,255,255,0.1);--tx:#f0efe9;--tx2:#b4b2a9;--tx3:#888780;--ac:#85B7EB;--dng:#F09595;--wrn:#FAC775;--ok:#97C459}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px}
+/* NAV */
+.hdr{background:var(--sur);border-bottom:.5px solid var(--bd);padding:1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem}
+.hdr h1{font-size:17px;font-weight:500}
+.hdr p{font-size:12px;color:var(--tx3);margin-top:2px}
+.nav{background:var(--sur);border-bottom:.5px solid var(--bd);display:flex;overflow-x:auto;padding:0 1rem}
+.nb{background:none;border:none;border-bottom:2px solid transparent;padding:.7rem .9rem;font-size:12px;color:var(--tx3);cursor:pointer;white-space:nowrap;transition:.15s}
+.nb:hover{color:var(--tx)}.nb.act{color:var(--ac);border-bottom-color:var(--ac);font-weight:500}
+/* LAYOUT */
+.main{max-width:1150px;margin:0 auto;padding:1.5rem}
+.sec{display:none}.sec.act{display:block}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:1.25rem}
+@media(max-width:720px){.g2{grid-template-columns:1fr}}
+/* CARDS */
+.card{background:var(--sur);border:.5px solid var(--bd);border-radius:var(--rl);padding:1.1rem 1.3rem;margin-bottom:1.25rem}
+.ct{font-size:13px;font-weight:500;margin-bottom:.9rem;display:flex;align-items:center;gap:6px;color:var(--tx)}
+/* KPI */
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.25rem}
+.kpi{background:var(--sur2);border-radius:var(--r);padding:.9rem 1rem}
+.kl{font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px}
+.kv{font-size:24px;font-weight:500;line-height:1}
+.ks{font-size:11px;color:var(--tx2);margin-top:3px}
+.dng{color:var(--dng)}.wrn{color:var(--wrn)}.ok{color:var(--ok)}
+/* TABLE */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:7px 9px;background:var(--sur2);color:var(--tx3);font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.4px;border-bottom:.5px solid var(--bd);white-space:nowrap}
+td{padding:7px 9px;border-bottom:.5px solid var(--bd);color:var(--tx2)}
+tr:last-child td{border-bottom:none}tr:hover td{background:var(--sur2)}
+.num{text-align:right;font-weight:500;color:var(--tx)}.cr{color:var(--dng);font-weight:500}.wr{color:var(--wrn);font-weight:500}
+/* BADGES */
+.badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500}
+.b-ma{background:#FCEBEB;color:#791F1F}.b-a{background:#FAEEDA;color:#633806}
+.b-m{background:#E6F1FB;color:#0C447C}.b-b{background:#EAF3DE;color:#3B6D11}
+@media(prefers-color-scheme:dark){.b-ma{background:#501313;color:#F7C1C1}.b-a{background:#412402;color:#FAC775}.b-m{background:#042C53;color:#B5D4F4}.b-b{background:#173404;color:#C0DD97}}
+/* FILTERS */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem}
+select,input[type=text]{padding:5px 9px;border:.5px solid var(--bd);border-radius:8px;background:var(--sur);color:var(--tx);font-size:12px;cursor:pointer}
+/* UPLOAD */
+.upload-zone{border:2px dashed var(--bd);border-radius:var(--rl);padding:2.5rem;text-align:center;cursor:pointer;transition:.2s;margin-bottom:1.5rem}
+.upload-zone:hover{border-color:var(--ac)}
+.upload-zone h2{font-size:16px;font-weight:500;margin-bottom:.5rem}
+.upload-zone p{font-size:13px;color:var(--tx3)}
+.btn{padding:8px 16px;border:.5px solid var(--bd);border-radius:8px;background:var(--sur);color:var(--tx);cursor:pointer;font-size:13px;font-weight:500;transition:.15s}
+.btn:hover{background:var(--sur2)}.btn.primary{background:var(--ac);color:#fff;border-color:var(--ac)}
+/* CHART */
+.cw{position:relative;width:100%}
+/* MODAL */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:100;align-items:flex-start;justify-content:center;padding:2rem 1rem;overflow-y:auto}
+.modal-bg.open{display:flex}
+.modal{background:var(--sur);border-radius:var(--rl);width:100%;max-width:900px;padding:1.5rem;position:relative;margin:auto}
+.modal-close{position:absolute;top:1rem;right:1rem;background:none;border:none;font-size:20px;cursor:pointer;color:var(--tx3)}
+/* BAR ROW */
+.br{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:.5px solid var(--bd);font-size:12px}
+.br:last-child{border-bottom:none}
+.bl{width:140px;color:var(--tx2);flex-shrink:0;font-size:11px}
+.bt{flex:1;background:var(--sur2);border-radius:3px;height:7px;overflow:hidden}
+.bf{height:7px;border-radius:3px}
+.bp{width:38px;text-align:right;font-size:11px;font-weight:500}
+
+/* INTERPRETIVE */
+.interp-box{margin-top:1rem;padding:.9rem 1.1rem;background:var(--sur2);border-left:3px solid var(--ac);border-radius:0 var(--r) var(--r) 0;font-size:12px;line-height:1.75;color:var(--tx2)}
+.interp-box p{margin-bottom:.5rem}.interp-box p:last-child{margin-bottom:0}
+.hallazgo{padding:.85rem 1rem;border-bottom:.5px solid var(--bd);font-size:13px;line-height:1.7;color:var(--tx2)}
+.hallazgo:last-child{border-bottom:none}
+.hallazgo strong{color:var(--tx);font-weight:500}
+.sug{display:flex;gap:.8rem;padding:.9rem 0;border-bottom:.5px solid var(--bd);align-items:flex-start}
+.sug:last-child{border-bottom:none}
+.sug-icon{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;margin-top:1px}
+.sug-body{font-size:12px;line-height:1.7;color:var(--tx2)}.sug-body strong{color:var(--tx);font-weight:500}
+
+.sub-row{background:var(--sur2);display:none}
+.sub-row.open{display:table-row}
+.sub-row td{padding:5px 9px 5px 28px;font-size:11px;color:var(--tx3);border-bottom:.5px solid var(--bd)}
+.expand-btn{background:none;border:.5px solid var(--bd);border-radius:5px;padding:1px 7px;font-size:11px;cursor:pointer;color:var(--tx3);transition:.15s;margin-left:6px}
+.expand-btn:hover{background:var(--sur2);color:var(--tx)}
+.expand-btn.open{background:var(--sur2);color:var(--ac);border-color:var(--ac)}
+.sub-badge{display:inline-block;font-size:10px;padding:1px 6px;border-radius:6px;margin-right:4px;font-weight:500}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <div><h1>Análisis de resultados académicos — Educación Media · Primer periodo 2026</h1>
+<p style="font-size:13px;font-weight:400;color:var(--tx2);margin-top:1px">Instituto Madre del Buen Consejo &nbsp;·&nbsp; Dr. Eduin Alexander Prada</p>
+<p id="hdr-sub" style="font-size:11px;color:var(--tx3);margin-top:2px">Educación Media · Carga tu archivo CSV para comenzar</p></div>
+  <div style="display:flex;gap:8px;align-items:center">
+    <span id="hdr-badge" style="display:none;font-size:11px;background:var(--sur2);padding:4px 10px;border-radius:20px;color:var(--tx3)"></span>
+    <button class="btn" id="btn-reload" style="display:none" onclick="resetDash()">↩ Cargar otro archivo</button>
+  </div>
+</div>
+
+<nav class="nav" id="nav" style="display:none">
+  <button class="nb act" onclick="showTab('resumen',this)">Resumen general</button>
+  <button class="nb" onclick="showTab('areas',this)">Áreas</button>
+  <button class="nb" onclick="showTab('grupos',this)">Visor de cursos</button>
+  <button class="nb" onclick="showTab('criticos',this)">Cursos críticos</button>
+  <button class="nb" onclick="showTab('estudiantes',this)">Estado académico</button>
+  <button class="nb" onclick="showTab('hallazgos',this)">Hallazgos y sugerencias</button>
+</nav>
+
+<div class="main">
+
+<!-- UPLOAD -->
+<div id="upload-sec">
+  <div class="upload-zone" id="drop-zone" onclick="document.getElementById('file-input').click()">
+    <h2>📂 Cargar base de datos</h2>
+    <p>Haz clic o arrastra aquí tu archivo <strong>CSV</strong> exportado desde R<br><span style="font-size:11px;margin-top:4px;display:block;color:var(--tx3)">Usa el archivo <em>base_dashboard_educacion_media_excel.csv</em></span></p>
+    <input type="file" id="file-input" accept=".csv,.txt" style="display:none" onchange="loadFile(this.files[0])">
+  </div>
+  <div class="card" style="font-size:12px;color:var(--tx2)">
+    <div class="ct">Columnas esperadas en el CSV</div>
+    <p style="line-height:1.8">sede · jornada · curso_original · curso_dashboard · no_lista · nombre · <strong>quimica_asig · fisica_asig · biologia_asig · c_naturales · c_sociales · filosofia · edu_artistica · etica · religion · edu_fisica · lenguaje · ingles · matematica · tecnologia_asig · informatica_asig · tecnologia_e_inf</strong> · perdidas · perdidas_calculadas · estado_academico · areas_perdidas · area_critica_curso · porcentaje_reprobacion_area_critica</p>
+  </div>
+</div>
+
+<!-- SECCIONES -->
+<div id="dash" style="display:none">
+
+<!-- RESUMEN -->
+<section class="sec act" id="tab-resumen">
+  <div class="kgrid" id="kpis"></div>
+  <div class="g2">
+    <div class="card"><div class="ct">Reprobación por área</div><div class="cw" style="height:300px"><canvas id="c-areas-rep"></canvas></div></div>
+    <div class="card"><div class="ct">Estado académico</div><div class="cw" style="height:180px;margin-bottom:.8rem"><canvas id="c-estado"></canvas></div><div id="estado-legend"></div></div>
+  </div>
+  <div class="card"><div class="ct">Top 10 situaciones críticas</div><div class="tw"><table><thead><tr><th>Curso</th><th>Sede</th><th>Jornada</th><th>Área</th><th>Reprobados</th><th>%</th><th>Riesgo</th></tr></thead><tbody id="top10-body"></tbody></table></div>
+<div id="interp-top10" class="interp-box"></div>
+</div>
+</section>
+
+<!-- ÁREAS -->
+<section class="sec" id="tab-areas">
+  <div class="card"><div class="ct">Reprobación y promedio por área</div><div id="areas-bars"></div></div>
+  <div class="g2">
+    <div class="card"><div class="ct">Por sede</div><div class="cw" style="height:260px"><canvas id="c-sede"></canvas></div></div>
+    <div class="card"><div class="ct">Por jornada</div><div class="cw" style="height:260px"><canvas id="c-jornada"></canvas></div></div>
+  </div>
+  <div class="card"><div class="ct">Tabla detallada por área</div><div class="tw"><table><thead><tr><th>Área</th><th>N</th><th>Reprobados</th><th>% Reprobación</th><th>Promedio</th><th>Mediana</th><th>Mín</th><th>Máx</th><th></th></tr></thead><tbody id="areas-table"></tbody></table></div>
+<div id="interp-areas" class="interp-box"></div>
+</div>
+</section>
+
+<!-- VISOR GRUPOS -->
+<section class="sec" id="tab-grupos">
+  <div class="filters">
+    <select id="f-sede-g" onchange="renderCursos()"><option value="">Todas las sedes</option></select>
+    <select id="f-jornada-g" onchange="renderCursos()"><option value="">Todas las jornadas</option></select>
+    <input type="text" id="f-search-g" placeholder="Buscar grupo..." oninput="renderCursos()" style="width:160px">
+  </div>
+  <div class="card"><div class="ct">Cursos <span id="cursos-count" style="color:var(--tx3);font-weight:400;font-size:11px;margin-left:4px"></span></div>
+  <div class="tw"><table><thead><tr><th>Curso</th><th>Sede</th><th>Jornada</th><th>Estudiantes</th><th>Pierden ≥1</th><th>% Pierde</th><th>Área crítica</th><th>% Crítica</th><th></th></tr></thead><tbody id="cursos-table"></tbody></table></div></div>
+</section>
+
+<!-- GRUPOS CRÍTICOS -->
+<section class="sec" id="tab-criticos">
+  <div class="filters">
+    <select id="f-sede-c" onchange="renderCriticos()"><option value="">Todas las sedes</option></select>
+    <select id="f-area-c" onchange="renderCriticos()"><option value="">Todas las áreas</option></select>
+    <select id="f-riesgo-c" onchange="renderCriticos()">
+      <option value="">Todos los niveles</option>
+      <option value="Riesgo muy alto">Muy alto (≥50%)</option>
+      <option value="Riesgo alto">Alto (30-49%)</option>
+      <option value="Riesgo medio">Medio (15-29%)</option>
+      <option value="Riesgo bajo">Bajo (&lt;15%)</option>
+    </select>
+  </div>
+  <div class="card"><div class="ct">Cursos críticos por área <span id="criticos-count" style="color:var(--tx3);font-weight:400;font-size:11px;margin-left:4px"></span></div>
+  <div class="tw"><table><thead><tr><th>Curso</th><th>Sede</th><th>Jornada</th><th>Área</th><th>Total</th><th>Reprobados</th><th>%</th><th>Riesgo</th></tr></thead><tbody id="criticos-table"></tbody></table></div></div>
+  <div class="card"><div class="ct">Top 15 cursos críticos</div><div class="cw" style="height:460px"><canvas id="c-criticos"></canvas></div>
+<div id="interp-criticos" class="interp-box"></div>
+</div>
+</section>
+
+<!-- ESTADO ACADÉMICO -->
+<section class="sec" id="tab-estudiantes">
+  <div class="kgrid" id="kpis-est"></div>
+  <div class="g2">
+    <div class="card"><div class="ct">Distribución de pérdidas</div><div class="cw" style="height:260px"><canvas id="c-dist"></canvas></div></div>
+    <div class="card"><div class="ct">Pérdidas por sede y jornada</div><div class="cw" style="height:260px"><canvas id="c-perdidas-sj"></canvas></div></div>
+  </div>
+  <div class="card"><div id="interp-est" class="interp-box" style="margin-bottom:0"></div></div>
+  <div class="card"><div class="ct">Buscador de estudiantes</div>
+    <div class="filters">
+    <input type="text" id="f-est" placeholder="Buscar nombre..." oninput="renderEstudiantes()" style="width:200px">
+    <select id="f-sede-e" onchange="poblarGruposEst();renderEstudiantes()"><option value="">Todas las sedes</option></select>
+    <select id="f-jornada-e" onchange="poblarGruposEst();renderEstudiantes()"><option value="">Todas las jornadas</option></select>
+    <select id="f-grupo-e" onchange="renderEstudiantes()"><option value="">Todos los cursos</option></select>
+    <select id="f-estado-e" onchange="renderEstudiantes()"><option value="">Todos los estados</option><option value="Sin areas perdidas">Sin pérdidas</option><option value="Pierde 1 area">1 área</option><option value="Pierde 2 areas">2 áreas</option><option value="Pierde 3 o mas areas">3+ áreas</option></select>
+    <button class="btn" onclick="limpiarFiltrosEst()" style="font-size:11px;padding:4px 10px">Limpiar</button>
+    </div>
+    <div class="tw"><table><thead><tr><th>Nombre</th><th>Curso</th><th>Sede</th><th>Jornada</th><th>Áreas perdidas</th><th>Estado</th></tr></thead><tbody id="est-table"></tbody></table></div>
+    <p id="est-count" style="font-size:11px;color:var(--tx3);margin-top:.5rem"></p>
+  </div>
+</section>
+
+
+<!-- HALLAZGOS Y SUGERENCIAS -->
+<section class="sec" id="tab-hallazgos">
+  <div class="card">
+    <div class="ct">Hallazgos principales del periodo</div>
+    <div id="hallazgos-content"></div>
+  </div>
+  <div class="card">
+    <div class="ct">Sugerencias pedagógicas</div>
+    <div id="sugerencias-content"></div>
+  </div>
+</section>
+</div><!-- /dash -->
+</div><!-- /main -->
+
+<!-- MODAL GRUPO -->
+<div class="modal-bg" id="modal-bg">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2 id="modal-title" style="font-size:16px;font-weight:500;margin-bottom:1rem"></h2>
+    <div class="kgrid" id="modal-kpis"></div>
+    <div id="modal-subareas" style="display:none;margin-bottom:1rem">
+      <div style="font-size:12px;font-weight:500;margin-bottom:.5rem;color:var(--tx2)">Detalle subáreas — C. Naturales y Tecnología e Inf.</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:8px" id="modal-subareas-grid"></div>
+    </div>
+    <div class="g2" style="margin-bottom:1rem">
+      <div><div style="font-size:12px;font-weight:500;margin-bottom:.5rem;color:var(--tx2)">Reprobación por área</div><div class="cw" style="height:220px"><canvas id="modal-chart-rep"></canvas></div></div>
+      <div><div style="font-size:12px;font-weight:500;margin-bottom:.5rem;color:var(--tx2)">Promedio por área</div><div class="cw" style="height:220px"><canvas id="modal-chart-avg"></canvas></div></div>
+    </div>
+    <div style="font-size:12px;font-weight:500;margin-bottom:.5rem;color:var(--tx2)">Estudiantes del grupo</div>
+    <div class="tw"><table><thead><tr><th>#</th><th>Nombre</th><th>C.Nat.</th><th>Inglés</th><th>Mat.</th><th>Lenguaje</th><th>Fil.</th><th>C.Soc.</th><th>Ed.Fís.</th><th>Tec.</th><th>Art.</th><th>Rel.</th><th>Ét.</th><th>Perdidas</th><th>Estado</th></tr></thead><tbody id="modal-students"></tbody></table></div>
+  </div>
+</div>
+
+<script>
+const AREAS = ['c_naturales','ingles','matematica','lenguaje','filosofia','c_sociales','edu_fisica','tecnologia_e_inf','edu_artistica','religion','etica'];
+const AREA_LABELS = {'c_naturales':'C. Naturales','ingles':'Inglés','matematica':'Matemática','lenguaje':'Lenguaje','filosofia':'Filosofía','c_sociales':'C. Sociales','edu_fisica':'Ed. Física','tecnologia_e_inf':'Tec. e Inf.','edu_artistica':'Ed. Artística','religion':'Religión','etica':'Ética'};
+const CORTE = 70;
+let DATA = [], charts = {};
+
+// ── DRAG & DROP ──
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.borderColor = 'var(--ac)'; });
+dz.addEventListener('dragleave', () => { dz.style.borderColor = 'var(--bd)'; });
+dz.addEventListener('drop', e => { e.preventDefault(); loadFile(e.dataTransfer.files[0]); });
+
+function loadFile(file) {
+  if (!file) return;
+  Papa.parse(file, {
+    header: true, skipEmptyLines: true, dynamicTyping: true,
+    delimitersToGuess: [',', ';', '\t'],
+    complete: r => { DATA = r.data; initDash(); }
+  });
+}
+
+function resetDash() {
+  DATA = [];
+  document.getElementById('upload-sec').style.display = 'block';
+  document.getElementById('dash').style.display = 'none';
+  document.getElementById('nav').style.display = 'none';
+  document.getElementById('btn-reload').style.display = 'none';
+  document.getElementById('hdr-badge').style.display = 'none';
+  document.getElementById('hdr-sub').textContent = 'Carga tu archivo CSV para comenzar';
+  Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
+  charts = {};
+}
+
+function showTab(id, btn) {
+  document.querySelectorAll('.sec').forEach(s => s.classList.remove('act'));
+  document.querySelectorAll('.nb').forEach(b => b.classList.remove('act'));
+  document.getElementById('tab-' + id).classList.add('act');
+  if (btn) btn.classList.add('act');
+}
+
+// ── STAT HELPERS ──
+function vals(rows, col) { return rows.map(r => +r[col]).filter(v => !isNaN(v)); }
+function mean(arr) { return arr.length ? arr.reduce((a,b)=>a+b,0)/arr.length : 0; }
+function median(arr) { if (!arr.length) return 0; const s=[...arr].sort((a,b)=>a-b); const m=Math.floor(s.length/2); return s.length%2?s[m]:(s[m-1]+s[m])/2; }
+function pct(n,d) { return d ? +(100*n/d).toFixed(1) : 0; }
+function r2(v) { return +v.toFixed(2); }
+function riskClass(p) { if(p>=50) return 'b-ma'; if(p>=30) return 'b-a'; if(p>=15) return 'b-m'; return 'b-b'; }
+function riskLabel(p) { if(p>=50) return 'Muy alto'; if(p>=30) return 'Alto'; if(p>=15) return 'Medio'; return 'Bajo'; }
+function riskKey(p) { if(p>=50) return 'Riesgo muy alto'; if(p>=30) return 'Riesgo alto'; if(p>=15) return 'Riesgo medio'; return 'Riesgo bajo'; }
+function barColor(p) { if(p>=25) return '#E24B4A'; if(p>=15) return '#BA7517'; if(p>=10) return '#378ADD'; return '#639922'; }
+
+// ── GROUP STATS ──
+function courseStats() {
+  const groups = {};
+  DATA.forEach(r => {
+    const g = r.curso_dashboard || r.curso_original;
+    if (!g) return;
+    if (!groups[g]) groups[g] = { curso:g, sede:r.sede, jornada:r.jornada, rows:[] };
+    groups[g].rows.push(r);
+  });
+  return Object.values(groups).map(g => {
+    const rows = g.rows, n = rows.length;
+    const pierde = rows.filter(r => (r.perdidas_calculadas||0) >= 1).length;
+    // área crítica: área con más reprobados en el grupo
+    let maxRep = 0, areaCrit = '';
+    AREAS.forEach(a => {
+      const rep = rows.filter(r => { const v=+r[a]; return !isNaN(v) && v < CORTE; }).length;
+      if (rep > maxRep) { maxRep = rep; areaCrit = a; }
+    });
+    const pctCrit = pct(maxRep, n);
+    return { ...g, n, pierde, pctPierde: pct(pierde,n), areaCrit, maxRep, pctCrit };
+  }).sort((a,b) => b.pctCrit - a.pctCrit);
+}
+
+// ── CRITICOS por área×grupo ──
+function criticosStats() {
+  const map = {};
+  DATA.forEach(r => {
+    const g = r.curso_dashboard || r.curso_original;
+    AREAS.forEach(a => {
+      const key = g+'|'+a;
+      if (!map[key]) map[key] = { curso:g, sede:r.sede, jornada:r.jornada, area:a, total:0, rep:0 };
+      const v = +r[a];
+      if (!isNaN(v)) { map[key].total++; if(v < CORTE) map[key].rep++; }
+    });
+  });
+  return Object.values(map)
+    .filter(x => x.total > 0)
+    .map(x => ({ ...x, pct: pct(x.rep, x.total), riesgo: riskKey(pct(x.rep, x.total)) }))
+    .filter(x => x.rep > 0)
+    .sort((a,b) => b.pct - a.pct);
+}
+
+// ── INIT ──
+function initDash() {
+  document.getElementById('upload-sec').style.display = 'none';
+  document.getElementById('dash').style.display = 'block';
+  document.getElementById('nav').style.display = 'flex';
+  document.getElementById('btn-reload').style.display = 'inline-block';
+  const badge = document.getElementById('hdr-badge');
+  badge.style.display = 'inline-block';
+  badge.textContent = DATA.length + ' estudiantes · ' + [...new Set(DATA.map(r=>r.curso_dashboard||r.curso_original))].length + ' cursos';
+  document.getElementById('hdr-sub').textContent = 'Datos cargados correctamente';
+
+  // poblar filtros
+  ['sede','jornada'].forEach(col => {
+    const vals = [...new Set(DATA.map(r=>r[col]).filter(Boolean))].sort();
+    ['g','c'].forEach(suf => {
+      const sel = document.getElementById('f-'+col+'-'+suf);
+      if (!sel) return;
+      vals.forEach(v => { const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+    });
+  });
+  const areasSel = document.getElementById('f-area-c');
+  AREAS.forEach(a => { const o=document.createElement('option'); o.value=a; o.textContent=AREA_LABELS[a]; areasSel.appendChild(o); });
+
+  buildResumen();
+  buildAreas();
+  renderCursos();
+  renderCriticos();
+  buildEstudiantes();
+}
+
+// ══ RESUMEN ══
+function buildResumen() {
+  const n = DATA.length;
+  const estados = {};
+  DATA.forEach(r => { const e = r.estado_academico||''; estados[e]=(estados[e]||0)+1; });
+  const sinP = estados['Sin areas perdidas']||0;
+  const p1 = estados['Pierde 1 area']||0;
+  const p2 = estados['Pierde 2 areas']||0;
+  const p3 = estados['Pierde 3 o mas areas']||0;
+  const cursos = [...new Set(DATA.map(r=>r.curso_dashboard||r.curso_original))].length;
+
+  const nCursos = [...new Set(DATA.map(r=>r.curso_dashboard||r.curso_original).filter(Boolean))].length;
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi"><div class="kl">Estudiantes</div><div class="kv">${n.toLocaleString('es')}</div><div class="ks">${nCursos} cursos</div></div>
+    <div class="kpi"><div class="kl">Sin pérdidas</div><div class="kv ok">${sinP}</div><div class="ks">${pct(sinP,n)}%</div></div>
+    <div class="kpi"><div class="kl">Pierden 1–2</div><div class="kv wrn">${p1+p2}</div><div class="ks">${pct(p1+p2,n)}%</div></div>
+    <div class="kpi"><div class="kl">Pierden 3+</div><div class="kv dng">${p3}</div><div class="ks">${pct(p3,n)}% — riesgo</div></div>
+    <div class="kpi"><div class="kl">Sedes</div><div class="kv">${[...new Set(DATA.map(r=>r.sede).filter(Boolean))].length}</div><div class="ks">sedes activas</div></div>
+  `;
+
+  // chart reprobación por área
+  const aStats = AREAS.map(a => {
+    const v = vals(DATA, a);
+    const rep = v.filter(x => x < CORTE).length;
+    return { a, pct: pct(rep, v.length), rep };
+  }).sort((a,b) => b.pct - a.pct);
+
+  destroyChart('areas-rep');
+  charts['areas-rep'] = new Chart(document.getElementById('c-areas-rep'), {
+    type:'bar',
+    data:{ labels: aStats.map(x=>AREA_LABELS[x.a]), datasets:[{ label:'% Reprobación', data: aStats.map(x=>x.pct), backgroundColor: aStats.map(x=>barColor(x.pct)), borderRadius:4 }] },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{ x:{ticks:{callback:v=>v+'%',font:{size:10}},grid:{color:'rgba(0,0,0,0.05)'}}, y:{ticks:{font:{size:11}},grid:{display:false}} } }
+  });
+
+  // dona estado
+  destroyChart('estado');
+  charts['estado'] = new Chart(document.getElementById('c-estado'), {
+    type:'doughnut',
+    data:{ labels:['Sin pérdidas','1 área','2 áreas','3+ áreas'], datasets:[{ data:[sinP,p1,p2,p3], backgroundColor:['#639922','#BA7517','#D85A30','#A32D2D'], borderWidth:0 }] },
+    options:{ responsive:true, maintainAspectRatio:false, cutout:'65%', plugins:{legend:{display:false}} }
+  });
+  document.getElementById('estado-legend').innerHTML = [
+    ['#639922','Sin pérdidas',sinP,pct(sinP,n)],
+    ['#BA7517','1 área',p1,pct(p1,n)],
+    ['#D85A30','2 áreas',p2,pct(p2,n)],
+    ['#A32D2D','3+ áreas',p3,pct(p3,n)]
+  ].map(([c,l,f,p])=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:.5px solid var(--bd);font-size:12px"><span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c};margin-right:6px"></span>${l}</span><span style="font-weight:500">${f} <span style="color:var(--tx3);font-weight:400">(${p}%)</span></span></div>`).join('');
+
+  // top10
+  const crit = criticosStats().slice(0,10);
+  const critForInterp = criticosStats();
+  document.getElementById('top10-body').innerHTML = crit.map(x=>`
+    <tr><td style="font-weight:500">${x.curso}</td><td>${x.sede}</td><td>${x.jornada}</td><td>${AREA_LABELS[x.area]}</td>
+    <td class="num ${x.pct>=50?'cr':''}">${x.rep}/${x.total}</td><td class="num ${x.pct>=50?'cr':'wr'}">${x.pct}%</td>
+    <td><span class="badge ${riskClass(x.pct)}">${riskLabel(x.pct)}</span></td></tr>`).join('');
+  interpTop10(criticosStats());
+}
+
+// ══ ÁREAS ══
+function buildAreas() {
+  const aStats = AREAS.map(a => {
+    const v = vals(DATA, a);
+    const rep = v.filter(x => x < CORTE).length;
+    return { a, n:v.length, rep, pct:pct(rep,v.length), avg:r2(mean(v)), med:r2(median(v)), min:Math.min(...v), max:Math.max(...v) };
+  }).sort((a,b) => b.pct - a.pct);
+
+  // barras
+  const subaBadges = a => {
+    const subs = {c_naturales:['quimica_asig','fisica_asig','biologia_asig'],tecnologia_e_inf:['tecnologia_asig','informatica_asig']};
+    const subLabels = {quimica_asig:'Q',fisica_asig:'F',biologia_asig:'B',tecnologia_asig:'Tec',informatica_asig:'Inf'};
+    if (!subs[a]) return '';
+    return '<span style="margin-left:6px">' + subs[a].map(col=>{
+      const sv=vals(DATA,col); const sp=pct(sv.filter(x=>x<CORTE).length,sv.length);
+      return `<span class="sub-badge ${sp>=20?'b-ma':sp>=10?'b-a':'b-b'}">${subLabels[col]} ${sp}%</span>`;
+    }).join('') + '</span>';
+  };
+  document.getElementById('areas-bars').innerHTML = aStats.map(d=>`
+    <div class="br"><span class="bl">${AREA_LABELS[d.a]}${subaBadges(d.a)}</span>
+    <div class="bt"><div class="bf" style="width:${Math.min(d.pct*3.5,100)}%;background:${barColor(d.pct)}"></div></div>
+    <span class="bp">${d.pct}%</span>
+    <span style="width:50px;text-align:right;font-size:11px;color:var(--tx3)">${d.avg}</span></div>`).join('');
+
+  // mapa de subáreas por área compuesta
+  const SUBAREAS = {
+    c_naturales: [
+      { label:'Química',    col:'quimica_asig'  },
+      { label:'Física',     col:'fisica_asig'   },
+      { label:'Biología',   col:'biologia_asig' }
+    ],
+    tecnologia_e_inf: [
+      { label:'Tecnología', col:'tecnologia_asig'  },
+      { label:'Informática',col:'informatica_asig' }
+    ]
+  };
+
+  // tabla con filas expandibles
+  document.getElementById('areas-table').innerHTML = aStats.map((d,i) => {
+    const subs = SUBAREAS[d.a];
+    const btnId = 'sub-btn-'+i;
+    const rowId = 'sub-row-'+i;
+    const mainRow = `<tr>
+      <td>${AREA_LABELS[d.a]}${subs?`<button class="expand-btn" id="${btnId}" onclick="toggleSub('${rowId}','${btnId}')" title="Ver asignaturas">▸ ver asignaturas</button>`:''}</td>
+      <td class="num">${d.n}</td>
+      <td class="num ${d.pct>=20?'cr':d.pct>=10?'wr':''}">${d.rep}</td>
+      <td class="num ${d.pct>=20?'cr':d.pct>=10?'wr':''}">${d.pct}%</td>
+      <td class="num">${d.avg}</td><td class="num">${d.med}</td>
+      <td class="num">${d.min}</td><td class="num">${d.max}</td><td></td>
+    </tr>`;
+    if (!subs) return mainRow;
+    const subCells = subs.map(s => {
+      const sv = vals(DATA, s.col);
+      const srep = sv.filter(x=>x<CORTE).length;
+      const spct = pct(srep, sv.length);
+      const savg = sv.length ? r2(mean(sv)) : '—';
+      const smed = sv.length ? r2(median(sv)) : '—';
+      const smin = sv.length ? Math.min(...sv) : '—';
+      const smax = sv.length ? Math.max(...sv) : '—';
+      const col = spct>=20?'cr':spct>=10?'wr':'';
+      return `<td colspan="9" style="padding:0"><table style="width:100%;border-collapse:collapse">
+        <tr class="sub-row open" id="${rowId}-${s.col}">
+          <td style="width:180px;padding:5px 9px 5px 24px;font-size:11px;color:var(--tx2);border-bottom:.5px solid var(--bd)">
+            <span style="color:var(--tx3);margin-right:4px">↳</span>${s.label}
+            <span class="sub-badge ${spct>=20?'b-ma':spct>=10?'b-a':'b-b'}">${spct}%</span>
+          </td>
+          <td class="num" style="font-size:11px;width:50px;border-bottom:.5px solid var(--bd)">${sv.length}</td>
+          <td class="num ${col}" style="font-size:11px;width:70px;border-bottom:.5px solid var(--bd)">${srep}</td>
+          <td class="num ${col}" style="font-size:11px;width:90px;border-bottom:.5px solid var(--bd)">${spct}%</td>
+          <td class="num" style="font-size:11px;width:60px;border-bottom:.5px solid var(--bd)">${savg}</td>
+          <td class="num" style="font-size:11px;width:60px;border-bottom:.5px solid var(--bd)">${smed}</td>
+          <td class="num" style="font-size:11px;width:40px;border-bottom:.5px solid var(--bd)">${smin}</td>
+          <td class="num" style="font-size:11px;width:40px;border-bottom:.5px solid var(--bd)">${smax}</td>
+          <td style="border-bottom:.5px solid var(--bd)"></td>
+        </tr></table></td>`;
+    }).join('');
+    const subRow = `<tr id="${rowId}" class="sub-row"><td colspan="9" style="padding:0"><table style="width:100%;border-collapse:collapse">${subs.map(s=>{
+      const sv=vals(DATA,s.col);const srep=sv.filter(x=>x<CORTE).length;const spct=pct(srep,sv.length);
+      const savg=sv.length?r2(mean(sv)):'—';const smed=sv.length?r2(median(sv)):'—';
+      const smin=sv.length?Math.min(...sv):'—';const smax=sv.length?Math.max(...sv):'—';
+      const col=spct>=20?'cr':spct>=10?'wr':'';
+      return `<tr style="background:var(--sur2)">
+        <td style="width:180px;padding:5px 9px 5px 24px;font-size:11px;color:var(--tx2);border-bottom:.5px solid var(--bd)">
+          <span style="color:var(--tx3);margin-right:4px">↳</span>${s.label}
+          <span class="sub-badge ${spct>=20?'b-ma':spct>=10?'b-a':'b-b'}">${spct}%</span>
+        </td>
+        <td class="num" style="font-size:11px;border-bottom:.5px solid var(--bd)">${sv.length}</td>
+        <td class="num ${col}" style="font-size:11px;border-bottom:.5px solid var(--bd)">${srep}</td>
+        <td class="num ${col}" style="font-size:11px;border-bottom:.5px solid var(--bd)">${spct}%</td>
+        <td class="num" style="font-size:11px;border-bottom:.5px solid var(--bd)">${savg}</td>
+        <td class="num" style="font-size:11px;border-bottom:.5px solid var(--bd)">${smed}</td>
+        <td class="num" style="font-size:11px;border-bottom:.5px solid var(--bd)">${smin}</td>
+        <td class="num" style="font-size:11px;border-bottom:.5px solid var(--bd)">${smax}</td>
+        <td style="border-bottom:.5px solid var(--bd)"></td>
+      </tr>`;
+    }).join('')}</table></td></tr>`;
+    return mainRow + subRow;
+  }).join('');
+
+  // por sede
+  const sedes = [...new Set(DATA.map(r=>r.sede).filter(Boolean))].sort();
+  const sedeColors = ['#378ADD','#1D9E75','#D85A30','#7F77DD','#BA7517'];
+  const topAreas = aStats.slice(0,6);
+  destroyChart('sede');
+  charts['sede'] = new Chart(document.getElementById('c-sede'), {
+    type:'bar',
+    data:{ labels: topAreas.map(x=>AREA_LABELS[x.a].substring(0,10)),
+      datasets: sedes.map((s,i) => ({
+        label: 'Sede '+s,
+        data: topAreas.map(x => { const v=vals(DATA.filter(r=>r.sede===s), x.a); return pct(v.filter(n=>n<CORTE).length, v.length); }),
+        backgroundColor: sedeColors[i]||'#888', borderRadius:3
+      }))
+    },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}}}, scales:{ y:{ticks:{callback:v=>v+'%',font:{size:10}}}, x:{ticks:{font:{size:10}}} } }
+  });
+
+  // por jornada
+  const jornadas = [...new Set(DATA.map(r=>r.jornada).filter(Boolean))].sort();
+  const jorColors = ['#378ADD','#BA7517','#1D9E75'];
+  destroyChart('jornada');
+  charts['jornada'] = new Chart(document.getElementById('c-jornada'), {
+    type:'bar',
+    data:{ labels: topAreas.map(x=>AREA_LABELS[x.a].substring(0,10)),
+      datasets: jornadas.map((j,i) => ({
+        label: j,
+        data: topAreas.map(x => { const v=vals(DATA.filter(r=>r.jornada===j), x.a); return pct(v.filter(n=>n<CORTE).length, v.length); }),
+        backgroundColor: jorColors[i]||'#888', borderRadius:3
+      }))
+    },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}}}, scales:{ y:{ticks:{callback:v=>v+'%',font:{size:10}}}, x:{ticks:{font:{size:10}}} } }
+  });
+  // interpretación áreas
+  const aStatsForInterp = AREAS.map(a=>{ const v=vals(DATA,a); const rep=v.filter(x=>x<CORTE).length; return {a,pct:pct(rep,v.length),avg:r2(mean(v))}; }).sort((a,b)=>b.pct-a.pct);
+  interpAreas(aStatsForInterp, DATA.length);
+}
+
+// ══ VISOR GRUPOS ══
+let cursosCache = [];
+function renderCursos() {
+  const sede = document.getElementById('f-sede-g').value;
+  const jornada = document.getElementById('f-jornada-g').value;
+  const search = (document.getElementById('f-search-g').value||'').toLowerCase();
+  cursosCache = courseStats();
+  const filtered = cursosCache.filter(g =>
+    (!sede || g.sede===sede) &&
+    (!jornada || g.jornada===jornada) &&
+    (!search || g.curso.toLowerCase().includes(search))
+  );
+  document.getElementById('cursos-count').textContent = `(${filtered.length} cursos)`;
+  document.getElementById('cursos-table').innerHTML = filtered.map(g=>`
+    <tr>
+      <td style="font-weight:500">${g.curso}</td><td>${g.sede}</td><td>${g.jornada}</td>
+      <td class="num">${g.n}</td>
+      <td class="num ${g.pctPierde>=30?'cr':g.pctPierde>=15?'wr':''}">${g.pierde}</td>
+      <td class="num ${g.pctPierde>=30?'cr':g.pctPierde>=15?'wr':''}">${g.pctPierde}%</td>
+      <td>${AREA_LABELS[g.areaCrit]||'—'}</td>
+      <td><span class="badge ${riskClass(g.pctCrit)}">${g.pctCrit}%</span></td>
+      <td><button class="btn" style="padding:3px 10px;font-size:11px" onclick="openModal('${g.curso}')">Ver detalle</button></td>
+    </tr>`).join('');
+}
+
+// ══ CRÍTICOS ══
+let criticosCache = [];
+function renderCriticos() {
+  const sede = document.getElementById('f-sede-c').value;
+  const area = document.getElementById('f-area-c').value;
+  const riesgo = document.getElementById('f-riesgo-c').value;
+  criticosCache = criticosStats();
+  const filtered = criticosCache.filter(x =>
+    (!sede || x.sede===sede) &&
+    (!area || x.area===area) &&
+    (!riesgo || x.riesgo===riesgo)
+  );
+  document.getElementById('criticos-count').textContent = `(${filtered.length} combinaciones)`;
+  document.getElementById('criticos-table').innerHTML = filtered.slice(0,50).map(x=>`
+    <tr><td style="font-weight:500">${x.curso}</td><td>${x.sede}</td><td>${x.jornada}</td>
+    <td>${AREA_LABELS[x.area]}</td><td class="num">${x.total}</td>
+    <td class="num ${x.pct>=50?'cr':'wr'}">${x.rep}</td>
+    <td class="num ${x.pct>=50?'cr':'wr'}">${x.pct}%</td>
+    <td><span class="badge ${riskClass(x.pct)}">${riskLabel(x.pct)}</span></td></tr>`).join('');
+
+  // chart top15
+  const top15 = criticosCache.slice(0,15).reverse();
+  destroyChart('criticos');
+  charts['criticos'] = new Chart(document.getElementById('c-criticos'), {
+    type:'bar',
+    data:{ labels: top15.map(x=>x.curso+' · '+AREA_LABELS[x.area].substring(0,8)),
+      datasets:[{ label:'% Reprobación', data:top15.map(x=>x.pct), backgroundColor:top15.map(x=>x.pct>=50?'#E24B4A':'#BA7517'), borderRadius:4 }]
+    },
+    options:{ indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{max:100,ticks:{callback:v=>v+'%',font:{size:10}}}, y:{ticks:{font:{size:10}}} } }
+  });
+  interpCriticos(criticosCache);
+}
+
+// ══ ESTADO ACADÉMICO ══
+function buildEstudiantes() {
+  const n = DATA.length;
+  const dist = {};
+  DATA.forEach(r => { const p=r.perdidas_calculadas||0; dist[p]=(dist[p]||0)+1; });
+  const p3 = DATA.filter(r=>(r.perdidas_calculadas||0)>=3).length;
+  const p1 = DATA.filter(r=>(r.perdidas_calculadas||0)===1).length;
+  const p2 = DATA.filter(r=>(r.perdidas_calculadas||0)===2).length;
+  const p0 = DATA.filter(r=>(r.perdidas_calculadas||0)===0).length;
+  document.getElementById('kpis-est').innerHTML = `
+    <div class="kpi"><div class="kl">Sin pérdidas</div><div class="kv ok">${p0}</div><div class="ks">${pct(p0,n)}%</div></div>
+    <div class="kpi"><div class="kl">1 área</div><div class="kv wrn">${p1}</div><div class="ks">${pct(p1,n)}%</div></div>
+    <div class="kpi"><div class="kl">2 áreas</div><div class="kv wrn">${p2}</div><div class="ks">${pct(p2,n)}%</div></div>
+    <div class="kpi"><div class="kl">3+ áreas</div><div class="kv dng">${p3}</div><div class="ks">${pct(p3,n)}% — urgente</div></div>
+  `;
+  const labels = Object.keys(dist).map(Number).sort((a,b)=>a-b);
+  const distColors = labels.map(k => k===0?'#639922':k<=2?'#BA7517':k<=4?'#D85A30':'#A32D2D');
+  destroyChart('dist');
+  charts['dist'] = new Chart(document.getElementById('c-dist'), {
+    type:'bar',
+    data:{ labels, datasets:[{ label:'Estudiantes', data:labels.map(k=>dist[k]||0), backgroundColor:distColors, borderRadius:4 }] },
+    options:{ responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{ x:{title:{display:true,text:'Áreas perdidas',font:{size:11}}}, y:{} } }
+  });
+
+  // por sede × jornada
+  const sj = {};
+  DATA.forEach(r => {
+    const k = (r.sede||'?')+' · '+(r.jornada||'?');
+    if (!sj[k]) sj[k]={total:0,pierde:0};
+    sj[k].total++;
+    if ((r.perdidas_calculadas||0)>=1) sj[k].pierde++;
+  });
+  const sjKeys = Object.keys(sj).sort();
+  destroyChart('perdidas-sj');
+  charts['perdidas-sj'] = new Chart(document.getElementById('c-perdidas-sj'), {
+    type:'bar',
+    data:{ labels:sjKeys,
+      datasets:[
+        {label:'Pierden ≥1',data:sjKeys.map(k=>sj[k].pierde),backgroundColor:'#E24B4A',borderRadius:3},
+        {label:'Sin pérdidas',data:sjKeys.map(k=>sj[k].total-sj[k].pierde),backgroundColor:'#639922',borderRadius:3}
+      ]
+    },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'top',labels:{font:{size:10},boxWidth:10}}},
+      scales:{ x:{stacked:true,ticks:{font:{size:10}}}, y:{stacked:true} }
+    }
+  });
+  // poblar filtros sede/jornada del buscador
+  ['sede','jornada'].forEach(col => {
+    const sel = document.getElementById('f-'+col+'-e');
+    if (!sel) return;
+    sel.innerHTML = `<option value="">Todas las ${col==='sede'?'sedes':'jornadas'}</option>`;
+    [...new Set(DATA.map(r=>r[col]).filter(Boolean))].sort()
+      .forEach(v => { const o=document.createElement('option'); o.value=v; o.textContent=v; sel.appendChild(o); });
+  });
+  poblarGruposEst();
+  renderEstudiantes();
+  // interpretaciones estado
+  const _n=DATA.length;
+  const _p0=DATA.filter(r=>(r.perdidas_calculadas||0)===0).length;
+  const _p1=DATA.filter(r=>(r.perdidas_calculadas||0)===1).length;
+  const _p2=DATA.filter(r=>(r.perdidas_calculadas||0)===2).length;
+  const _p3=DATA.filter(r=>(r.perdidas_calculadas||0)>=3).length;
+  interpEst(_n,_p0,_p1,_p2,_p3);
+  const _aS=AREAS.map(a=>{ const v=vals(DATA,a); const rep=v.filter(x=>x<CORTE).length; return {a,pct:pct(rep,v.length),avg:r2(mean(v))}; }).sort((a,b)=>b.pct-a.pct);
+  buildHallazgos(_aS,_n,_p0,_p3,criticosStats(),courseStats());
+}
+
+function poblarGruposEst() {
+  const sede = document.getElementById('f-sede-e').value;
+  const jornada = document.getElementById('f-jornada-e').value;
+  const sel = document.getElementById('f-grupo-e');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">Todos los cursos</option>';
+  [...new Set(DATA.filter(r =>
+    (!sede || r.sede===sede) && (!jornada || r.jornada===jornada)
+  ).map(r=>r.curso_dashboard||r.curso_original).filter(Boolean))].sort()
+    .forEach(g => { const o=document.createElement('option'); o.value=g; o.textContent=g; if(g===prev) o.selected=true; sel.appendChild(o); });
+}
+function limpiarFiltrosEst() {
+  document.getElementById('f-est').value='';
+  document.getElementById('f-sede-e').value='';
+  document.getElementById('f-jornada-e').value='';
+  poblarGruposEst();
+  document.getElementById('f-grupo-e').value='';
+  document.getElementById('f-estado-e').value='';
+  renderEstudiantes();
+}
+// Parsea detalle_areas_y_asignaturas y construye chips de áreas perdidas
+// con desglose de subáreas para C. Naturales y Tec. e Inf.
+function chipAreasPerdidas(r) {
+  if (!r.areas_perdidas || r.areas_perdidas === 'Ninguna') {
+    return '<span style="color:var(--tx3);font-size:11px">Ninguna</span>';
+  }
+  // Parsear detalle: "c_naturales | Nota area: 15 | Asignaturas: Quimica = 13; Fisica = 17; Biologia = 12 || ..."
+  const detalleRaw = r.detalle_areas_y_asignaturas || '';
+  const bloques = detalleRaw.split(' || ');
+  const detalleMap = {};
+  bloques.forEach(b => {
+    const parts = b.split(' | ');
+    if (parts.length >= 3) {
+      const areaKey = parts[0].trim();
+      const notaStr = parts[1].replace('Nota area:', '').trim();
+      const asigStr = parts[2].replace('Asignaturas:', '').trim();
+      detalleMap[areaKey] = { nota: notaStr, asig: asigStr };
+    }
+  });
+
+  const COMPUESTAS = { c_naturales: true, tecnologia_e_inf: true };
+  const areasList = r.areas_perdidas.split(',').map(a => a.trim()).filter(Boolean);
+
+  return areasList.map(aKey => {
+    const label = AREA_LABELS[aKey] || aKey;
+    const det = detalleMap[aKey];
+    const nota = det ? det.nota : '—';
+    const badgeClass = nota < 50 ? 'b-ma' : 'b-a';
+
+    let chip = `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--sur2);border:.5px solid var(--bd);border-radius:6px;padding:2px 7px;margin:2px 3px 2px 0;font-size:11px;white-space:nowrap">
+      <span style="font-weight:500;color:var(--tx)">${label}</span>
+      <span class="badge ${badgeClass}" style="font-size:10px">${nota}</span>`;
+
+    // Si es área compuesta, mostrar subáreas
+    if (COMPUESTAS[aKey] && det && det.asig) {
+      const subs = det.asig.split(';').map(s => s.trim()).filter(Boolean);
+      const subChips = subs.map(s => {
+        const [subLabel, subNota] = s.split('=').map(x => x.trim());
+        const sn = parseFloat(subNota);
+        const sc = !isNaN(sn) && sn < 70 ? (sn < 50 ? 'color:#A32D2D;font-weight:500' : 'color:#854F0B;font-weight:500') : 'color:var(--tx3)';
+        return `<span style="font-size:10px;${sc};margin-left:2px" title="${subLabel}">${subLabel.split(' ')[0]}:${isNaN(sn)?subNota:sn}</span>`;
+      }).join('<span style="color:var(--bd);margin:0 1px">·</span>');
+      chip += `<span style="border-left:.5px solid var(--bd);margin-left:4px;padding-left:5px;font-size:10px;color:var(--tx3)">${subChips}</span>`;
+    }
+
+    chip += '</span>';
+    return chip;
+  }).join('');
+}
+
+function renderEstudiantes() {
+  const q = (document.getElementById('f-est').value||'').toLowerCase();
+  const sede = document.getElementById('f-sede-e').value;
+  const jornada = document.getElementById('f-jornada-e').value;
+  const grupo = document.getElementById('f-grupo-e').value;
+  const estado = document.getElementById('f-estado-e').value;
+  const all = DATA.filter(r =>
+    (!q || (r.nombre||'').toLowerCase().includes(q)) &&
+    (!sede || r.sede===sede) &&
+    (!jornada || r.jornada===jornada) &&
+    (!grupo || (r.curso_dashboard||r.curso_original)===grupo) &&
+    (!estado || (r.estado_academico||'')===estado)
+  );
+  const filtered = all.slice(0,150);
+  document.getElementById('est-table').innerHTML = filtered.map(r=>`
+    <tr>
+      <td style="font-weight:500;font-size:12px;min-width:160px">${r.nombre||'—'}</td>
+      <td style="white-space:nowrap">${r.curso_dashboard||r.curso_original||'—'}</td>
+      <td>${r.sede||'—'}</td>
+      <td>${r.jornada||'—'}</td>
+      <td style="min-width:200px">${chipAreasPerdidas(r)}</td>
+      <td><span class="badge ${(r.perdidas_calculadas||0)>=3?'b-ma':(r.perdidas_calculadas||0)>=1?'b-a':'b-b'}">${r.estado_academico||'—'}</span></td>
+    </tr>`).join('');
+  const total = all.length;
+  document.getElementById('est-count').textContent = `Mostrando ${filtered.length} de ${total} estudiante${total!==1?'s':''} · ${DATA.length} en total`;
+}
+
+// ══ MODAL ══
+let modalCharts = {};
+function openModal(grupo) {
+  const rows = DATA.filter(r => (r.curso_dashboard||r.curso_original)===grupo);
+  if (!rows.length) return;
+  const sample = rows[0];
+  document.getElementById('modal-title').textContent = grupo+' · Sede '+sample.sede+' · '+sample.jornada;
+  document.getElementById('modal-bg').classList.add('open');
+
+  const n = rows.length;
+  const pierde = rows.filter(r=>(r.perdidas_calculadas||0)>=1).length;
+  const p3 = rows.filter(r=>(r.perdidas_calculadas||0)>=3).length;
+  const aStats = AREAS.map(a=>{ const v=vals(rows,a); return {a,rep:v.filter(x=>x<CORTE).length,avg:r2(mean(v)),n:v.length}; }).sort((a,b)=>b.rep-a.rep);
+  const areaCrit = aStats[0];
+
+  document.getElementById('modal-kpis').innerHTML = `
+    <div class="kpi"><div class="kl">Estudiantes</div><div class="kv">${n}</div></div>
+    <div class="kpi"><div class="kl">Sin pérdidas</div><div class="kv ok">${n-pierde}</div><div class="ks">${pct(n-pierde,n)}%</div></div>
+    <div class="kpi"><div class="kl">Pierden ≥1</div><div class="kv wrn">${pierde}</div><div class="ks">${pct(pierde,n)}%</div></div>
+    <div class="kpi"><div class="kl">Pierden 3+</div><div class="kv dng">${p3}</div><div class="ks">${pct(p3,n)}%</div></div>
+    <div class="kpi"><div class="kl">Área crítica</div><div class="kv" style="font-size:13px">${AREA_LABELS[areaCrit.a]}</div><div class="ks">${pct(areaCrit.rep,areaCrit.n)}% reprobación</div></div>
+  `;
+  // Subáreas C. Naturales y Tec. e Inf.
+  const subBox = document.getElementById('modal-subareas');
+  const subGrid = document.getElementById('modal-subareas-grid');
+  if (subBox && subGrid) {
+    const subAreas = [
+      { label:'Química', col:'quimica_asig', parent:'c_naturales' },
+      { label:'Física',  col:'fisica_asig',  parent:'c_naturales' },
+      { label:'Biología',col:'biologia_asig',parent:'c_naturales' },
+      { label:'Tecnología', col:'tecnologia_asig', parent:'tecnologia_e_inf' },
+      { label:'Informática',col:'informatica_asig',parent:'tecnologia_e_inf' }
+    ];
+    subGrid.innerHTML = subAreas.map(s => {
+      const sv = vals(rows, s.col);
+      const rep = sv.filter(x=>x<70).length;
+      const avg = sv.length ? r2(mean(sv)) : '—';
+      const p = sv.length ? pct(rep,sv.length) : 0;
+      return `<div class="kpi" style="border-left:3px solid ${p>=50?'#E24B4A':p>=30?'#BA7517':'#378ADD'}">
+        <div class="kl" style="font-size:9px">${s.label} <span style="opacity:.6">(${AREA_LABELS[s.parent]})</span></div>
+        <div class="kv" style="font-size:18px;color:${p>=50?'var(--dng)':p>=30?'var(--wrn)':'var(--tx)'}">${avg}</div>
+        <div class="ks">${rep} reprob. · ${p}%</div>
+      </div>`;
+    }).join('');
+    subBox.style.display = 'block';
+  }
+
+  // destruir charts del modal anterior
+  Object.values(modalCharts).forEach(c=>{try{c.destroy();}catch(e){}});
+  modalCharts={};
+
+  setTimeout(()=>{
+    modalCharts['rep'] = new Chart(document.getElementById('modal-chart-rep'), {
+      type:'bar',
+      data:{ labels:aStats.map(x=>AREA_LABELS[x.a].substring(0,10)),
+        datasets:[{label:'Reprobados',data:aStats.map(x=>pct(x.rep,x.n)),backgroundColor:aStats.map(x=>barColor(pct(x.rep,x.n))),borderRadius:4}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{y:{ticks:{callback:v=>v+'%',font:{size:10}}},x:{ticks:{font:{size:9}}}}}
+    });
+    modalCharts['avg'] = new Chart(document.getElementById('modal-chart-avg'), {
+      type:'bar',
+      data:{ labels:aStats.map(x=>AREA_LABELS[x.a].substring(0,10)),
+        datasets:[{label:'Promedio',data:aStats.map(x=>x.avg),backgroundColor:'#378ADD',borderRadius:4}]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},
+        scales:{y:{min:0,max:100,ticks:{font:{size:10}}},x:{ticks:{font:{size:9}}}}}
+    });
+  },50);
+
+  // tabla estudiantes
+  document.getElementById('modal-students').innerHTML = rows
+    .sort((a,b)=>(b.perdidas_calculadas||0)-(a.perdidas_calculadas||0))
+    .map((r,i)=>`<tr>
+      <td class="num">${r.no_lista||i+1}</td>
+      <td style="font-size:11px;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.nombre||'—'}</td>
+      ${AREAS.map(a=>{ const v=+r[a]; const ok=!isNaN(v); return `<td class="num${ok&&v<CORTE?' cr':''}" style="font-size:11px">${ok?v:'—'}</td>`; }).join('')}
+      <td class="num ${(r.perdidas_calculadas||0)>=3?'cr':(r.perdidas_calculadas||0)>=1?'wr':''}">${r.perdidas_calculadas||0}</td>
+      <td><span class="badge ${(r.perdidas_calculadas||0)>=3?'b-ma':(r.perdidas_calculadas||0)>=1?'b-a':'b-b'}" style="font-size:9px">${(r.perdidas_calculadas||0)===0?'OK':(r.perdidas_calculadas||0)+'P'}</span></td>
+    </tr>`).join('');
+}
+
+function closeModal() {
+  document.getElementById('modal-bg').classList.remove('open');
+}
+document.getElementById('modal-bg').addEventListener('click', e => { if(e.target===e.currentTarget) closeModal(); });
+
+
+function toggleSub(rowId, btnId) {
+  const row = document.getElementById(rowId);
+  const btn = document.getElementById(btnId);
+  if (!row || !btn) return;
+  const isOpen = row.classList.toggle('open');
+  btn.classList.toggle('open', isOpen);
+  btn.textContent = isOpen ? '▾ ocultar' : '▸ ver asignaturas';
+}
+
+function destroyChart(key) {
+  if (charts[key]) { try { charts[key].destroy(); } catch(e){} delete charts[key]; }
+}
+
+// ── INTERPRETACIONES DINÁMICAS ──
+
+function interpTop10(crit) {
+  if (!crit.length) return;
+  const el = document.getElementById('interp-top10');
+  if (!el) return;
+  const top = crit[0];
+  const muyAltos = crit.filter(x=>x.pct>=50).length;
+  const cursos = [...new Set(crit.map(x=>x.curso))].length;
+  const areasTop = [...new Set(crit.slice(0,5).map(x=>AREA_LABELS[x.area]))].join(', ');
+  el.innerHTML = `<p>La tabla anterior muestra las diez combinaciones curso-área con mayor porcentaje de reprobación en el primer periodo. <strong>${top.curso}</strong> concentra la situación más crítica: en el área de <strong>${AREA_LABELS[top.area]}</strong>, el ${top.pct}% de sus estudiantes no alcanzó el desempeño mínimo requerido. En total, se identificaron <strong>${muyAltos} combinación${muyAltos!==1?'es':''} con riesgo muy alto</strong> (reprobación igual o superior al 50%), distribuidas en ${cursos} curso${cursos!==1?'s':''}. Las áreas con mayor presencia en estos casos son: ${areasTop}.</p>`;
+}
+
+function interpAreas(aStats, n) {
+  const el = document.getElementById('interp-areas');
+  if (!el) return;
+  const top1 = aStats[0], top2 = aStats[1];
+  const conRiesgoMedio = aStats.filter(x=>x.pct>=15).length;
+  const conRiesgoAlto  = aStats.filter(x=>x.pct>=30).length;
+  const bajoCorte = aStats.filter(x=>x.avg < 75).map(x=>AREA_LABELS[x.a]);
+  el.innerHTML = `<p>Del total de ${aStats.length} áreas evaluadas, <strong>${conRiesgoMedio} presentan reprobación igual o superior al 15%</strong>${conRiesgoAlto>0?' y '+conRiesgoAlto+' superan el 30%':''}, lo que las ubica en nivel de riesgo medio o superior. <strong>${AREA_LABELS[top1.a]}</strong> registra el mayor porcentaje de reprobación con un ${top1.pct}% y un promedio de ${top1.avg}, seguida por <strong>${AREA_LABELS[top2.a]}</strong> con ${top2.pct}%.</p><p>${bajoCorte.length>0?'Las áreas con promedio por debajo de 75 son: <strong>'+bajoCorte.join(', ')+'</strong>. Estas merecen especial atención en el seguimiento del segundo periodo.':'Todas las áreas presentan promedio igual o superior a 75, aunque la reprobación indica concentración de dificultades en un subgrupo de estudiantes.'} Los valores mínimos cercanos a cero en algunas áreas pueden reflejar inasistencia prolongada o ausencia de evaluaciones, más que dificultad de aprendizaje generalizada.</p>`;
+}
+
+function interpCriticos(crit) {
+  const el = document.getElementById('interp-criticos');
+  if (!el) return;
+  const muyAltos = crit.filter(x=>x.pct>=50);
+  const sedesAfect = [...new Set(muyAltos.map(x=>x.sede))];
+  const areasAfect = [...new Set(muyAltos.map(x=>AREA_LABELS[x.area]))].slice(0,4);
+  const cursosAfect = [...new Set(muyAltos.map(x=>x.curso))].slice(0,4);
+  el.innerHTML = `<p>El gráfico anterior concentra las combinaciones curso-área con mayor reprobación. De las <strong>${crit.length} combinaciones</strong> con al menos un estudiante reprobado, <strong>${muyAltos.length} superan el umbral del 50%</strong>${sedesAfect.length?', afectando a la'+( sedesAfect.length>1?'s':'')+'  sede'+( sedesAfect.length>1?'s':'')+' <strong>'+sedesAfect.join(', ')+'</strong>':''}. Los cursos en situación más crítica son <strong>${cursosAfect.join(', ')}</strong>, con mayor concentración en las áreas de <strong>${areasAfect.join(', ')}</strong>. La concentración de casos críticos en cursos específicos sugiere que las dificultades responden a condiciones particulares de esos grupos, más que a un problema institucional uniforme.</p>`;
+}
+
+function interpEst(n, p0, p1, p2, p3) {
+  const el = document.getElementById('interp-est');
+  if (!el) return;
+  const pctOk = pct(p0,n), pctRiesgo = pct(p3,n), pctInter = pct(p1+p2,n);
+  el.innerHTML = `<p style="margin:0"><strong>Lectura general:</strong> Al cierre del primer periodo, <strong>${p0} estudiantes (${pctOk}%) no registran áreas perdidas</strong>. Sin embargo, <strong>${p3} estudiantes (${pctRiesgo}%) perdieron tres o más áreas</strong>, lo que configura una situación de riesgo académico que requiere atención prioritaria. Los ${p1+p2} estudiantes (${pctInter}%) que perdieron una o dos áreas representan una franja con posibilidad de recuperación si reciben acompañamiento oportuno antes del cierre del año. La distribución de pérdidas no es uniforme entre cursos ni sedes, lo que sugiere que los factores contextuales inciden en los resultados.</p>`;
+}
+
+function buildHallazgos(aStats, n, p0, p3, crit, gStats) {
+  const hEl = document.getElementById('hallazgos-content');
+  const sEl = document.getElementById('sugerencias-content');
+  if (!hEl || !sEl) return;
+
+  const top1 = aStats[0], top2 = aStats[1], top3 = aStats[2];
+  const muyAltos = crit.filter(x=>x.pct>=50);
+  const cursoCrit = crit[0];
+  const areasAltas = aStats.filter(x=>x.pct>=20).map(x=>AREA_LABELS[x.a]);
+  const areasBasjas = aStats.filter(x=>x.pct<5 && x.pct>0).map(x=>AREA_LABELS[x.a]);
+  const sedes = [...new Set(DATA.map(r=>r.sede).filter(Boolean))];
+  const jornadas = [...new Set(DATA.map(r=>r.jornada).filter(Boolean))];
+  const hayVariasSedes = sedes.length > 1;
+  const hayVariasJornadas = jornadas.length > 1;
+  const cursosConRiesgoMuyAlto = [...new Set(muyAltos.map(x=>x.curso))];
+  // subáreas C. Naturales
+  const vQuim = vals(DATA,'quimica_asig'), vFis = vals(DATA,'fisica_asig'), vBio = vals(DATA,'biologia_asig');
+  const repQuim = vQuim.length ? pct(vQuim.filter(x=>x<70).length, vQuim.length) : 0;
+  const repFis  = vFis.length  ? pct(vFis.filter(x=>x<70).length,  vFis.length)  : 0;
+  const repBio  = vBio.length  ? pct(vBio.filter(x=>x<70).length,  vBio.length)  : 0;
+  const subNatCrit = [['Química',repQuim],['Física',repFis],['Biología',repBio]].sort((a,b)=>b[1]-a[1]);
+  // subáreas Tec
+  const vTec = vals(DATA,'tecnologia_asig'), vInf = vals(DATA,'informatica_asig');
+  const repTec = vTec.length ? pct(vTec.filter(x=>x<70).length, vTec.length) : 0;
+  const repInf = vInf.length ? pct(vInf.filter(x=>x<70).length, vInf.length) : 0;
+
+  const hallazgos = [
+    {
+      icon:'📊',
+      text:`<strong>${AREA_LABELS[top1.a]}${top2?' e '+AREA_LABELS[top2.a]:''} concentran la mayor reprobación institucional</strong> con el ${top1.pct}%${top2?' y '+top2.pct+'%':''} respectivamente.${areasAltas.length>0?' En total, '+areasAltas.length+' área'+( areasAltas.length>1?'s':'')+' ('+areasAltas.join(', ')+') superan el 20% de reprobación,':''} lo que sugiere que las dificultades no son puntuales sino que afectan a un segmento considerable del estudiantado.`
+    },
+    {
+      icon:'🔬',
+      text:`<strong>Dentro de C. Naturales, ${subNatCrit[0][0]} presenta la mayor reprobación individual</strong> con el ${subNatCrit[0][1]}%, seguida por ${subNatCrit[1][0]} (${subNatCrit[1][1]}%) y ${subNatCrit[2][0]} (${subNatCrit[2][1]}%). Este desglose es relevante porque la nota del área es el promedio de las tres, y la pérdida puede estar concentrada en una o dos asignaturas específicas, no necesariamente en las tres.`
+    },
+    {
+      icon:'🔴',
+      text:`<strong>Se identificaron ${muyAltos.length} combinación${muyAltos.length!==1?'es':''} curso-área con riesgo muy alto</strong> (reprobación ≥50%).${cursosConRiesgoMuyAlto.length?' Los cursos afectados son: <strong>'+cursosConRiesgoMuyAlto.join(', ')+'</strong>.':''} Este nivel de concentración en cursos específicos amerita una revisión diferenciada por grupo.`
+    },
+    {
+      icon:'👥',
+      text:`<strong>${p3} estudiantes (${pct(p3,n)}% del total) perdieron tres o más áreas</strong> al finalizar el primer periodo. En educación media, la acumulación de áreas perdidas en el primer periodo es un indicador de riesgo que puede comprometer la promoción al final del año.`
+    },
+    {
+      icon:'📍',
+      text: cursoCrit
+        ? `<strong>El curso ${cursoCrit.curso} presenta la situación más crítica</strong> registrada: ${cursoCrit.pct}% de reprobación en <strong>${AREA_LABELS[cursoCrit.area]}</strong> (${cursoCrit.rep} de ${cursoCrit.total} estudiantes). Este resultado supera significativamente el promedio institucional del área (${aStats.find(x=>x.a===cursoCrit.area)?.pct||'—'}%).`
+        : `No se registran combinaciones curso-área con reprobación en este periodo.`
+    },
+    {
+      icon:'📈',
+      text:`<strong>Las áreas con menor reprobación${areasBasjas.length?' son '+areasBasjas.join(', '):'registran tasas inferiores al 5%'}</strong>. Aunque los promedios son favorables, existen estudiantes individuales con notas bajas que pueden quedar invisibilizados detrás de la estadística agregada del grupo.`
+    },
+    {
+      icon:'⚖️',
+      text: hayVariasSedes || hayVariasJornadas
+        ? `<strong>Se observan diferencias en la reprobación entre ${hayVariasSedes?'sedes':''}${hayVariasSedes&&hayVariasJornadas?' y ':''}${hayVariasJornadas?'jornadas':''}</strong>. Estas variaciones pueden estar asociadas a condiciones organizativas, de asignación docente o de composición del estudiantado. Su interpretación requiere complementarse con información cualitativa que el consejo académico puede aportar.`
+        : `<strong>La institución opera con una sola sede y jornada</strong>, lo que facilita la comparación directa entre cursos sin variables contextuales intermedias.`
+    }
+  ];
+
+  hEl.innerHTML = hallazgos.map(item=>`<div class="hallazgo"><span style="font-size:16px;margin-right:8px">${item.icon}</span>${item.text}</div>`).join('');
+
+  const p2 = n - p0 - p3 - DATA.filter(r=>(r.perdidas_calculadas||0)===1).length;
+  const sugerencias = [
+    `Las dos áreas con mayor reprobación —<strong>${AREA_LABELS[top1.a]}${top2?' e '+AREA_LABELS[top2.a]:''}</strong>— merecen una revisión que vaya más allá del porcentaje global. Identificar si los estudiantes que reprueban comparten características comunes (curso, jornada, inasistencia, dificultades en evaluaciones específicas) permite diseñar intervenciones más precisas.`,
+    `En C. Naturales, el desglose por Química, Física y Biología muestra que la dificultad puede originarse en una sola asignatura. Antes de diseñar un plan de refuerzo para toda el área, conviene identificar cuál de las tres asignaturas concentra el mayor número de casos con nota baja en cada curso.`,
+    `Los ${p3} estudiantes que perdieron tres o más áreas conforman un grupo heterogéneo. Una caracterización que cruce número de áreas perdidas, curso y sede puede ayudar a priorizar quiénes necesitan atención inmediata frente a quiénes tienen mayor margen de recuperación en el segundo periodo.`,
+    `${cursosConRiesgoMuyAlto.length?'Los cursos '+cursosConRiesgoMuyAlto.slice(0,3).join(', ')+' presentan riesgo muy alto en al menos un área.':'Los cursos con riesgo muy alto identificados en el análisis'} Una revisión colectiva de los instrumentos de evaluación aplicados y de las condiciones de esos cursos puede aportar información que los datos cuantitativos no capturan.`,
+    `Las áreas con baja reprobación también presentan estudiantes con notas muy bajas o cercanas a cero. Identificar estos casos de forma individual evita que queden ocultos detrás de un promedio institucional favorable y permite actuar antes del cierre del segundo periodo.`
+  ];
+
+  sEl.innerHTML = sugerencias.map((s,i)=>`<div class="sug"><div class="sug-icon" style="background:var(--sur2);color:var(--ac);font-weight:500;font-size:13px">${i+1}</div><div class="sug-body">${s}</div></div>`).join('');
+}
+
+</script>
+</body>
+</html>
